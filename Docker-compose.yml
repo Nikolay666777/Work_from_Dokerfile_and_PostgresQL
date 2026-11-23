@@ -1,0 +1,55 @@
+
+services:
+  web:
+    build: .
+    container_name: hw_final_web
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=db
+      - REDIS_HOST=redis
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - hw_final_net
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: hw_final_db
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hw_final_net
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: hw_final_redis
+    command: redis-server --loglevel warning
+    ports:
+      - "6379:6379"
+    networks:
+      - hw_final_net
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+
+networks:
+  hw_final_net:
+    driver: bridge
